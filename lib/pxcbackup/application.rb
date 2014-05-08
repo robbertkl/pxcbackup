@@ -2,6 +2,9 @@ require 'optparse'
 require 'time'
 require 'yaml'
 
+require 'pxcbackup/backupper'
+require 'pxcbackup/version'
+
 module PXCBackup
   class Application
     def initialize(argv)
@@ -72,6 +75,11 @@ module PXCBackup
 
         opt.on('-v', '--verbose', 'verbose output') do
           @options[:verbose] = true
+        end
+
+        opt.on('--version', 'print version and exit') do
+          puts "pxcbackup #{VERSION}"
+          exit
         end
 
         opt.on('-y', '--yes', 'skip confirmation on backup restore') do
