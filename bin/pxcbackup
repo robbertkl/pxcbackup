@@ -1,0 +1,10 @@
+#!/usr/bin/env ruby
+
+require 'pxcbackup'
+require 'pxcbackup/application'
+
+begin
+  PXCBackup::Application.new(ARGV).run
+rescue => e
+  abort "#{$0}: #{e.message}"
+end
