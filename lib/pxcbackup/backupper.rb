@@ -38,7 +38,7 @@ module PXCBackup
       desync_wait = options[:desync_wait] || 60
       retention = options[:retention] || 100
 
-      raise 'cannot find backup dir' unless @local_repo && File.directory?(local_repo.path)
+      raise 'cannot find backup dir' unless @local_repo && File.directory?(@local_repo.path)
       raise 'cannot enable encryption without encryption key' if @encrypt && !@encrypt_key
 
       arguments = [
