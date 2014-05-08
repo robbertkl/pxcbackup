@@ -18,7 +18,7 @@ PXCBackup is basically a server command line tool, which means the following con
 
 * Support ruby >= 1.8.7. Yes, 1.8.7 is EOL, but many cloud provider OS images still contain 1.8.7.
 * Have no external gem dependencies. This tool should be completely stand-alone, and only require certain command line tools.
-* Instead, execute command line tools. For example, it uses the `mysql` and `s3cmd` instead of modules / gems.
+* Instead, execute command line tools. For example, it uses the `mysql` and `s3cmd` tools instead of modules / gems.
 
 ## Installation
 

@@ -114,7 +114,7 @@ module PXCBackup
           end
         end
 
-	if incremental_backups.any?
+        if incremental_backups.any?
           log_action "  Preparing base backup (LSN #{full_backup_info[:to_lsn]})" do
             innobackupex(['--apply-log', '--redo-only', full_backup_path.shellescape])
           end
