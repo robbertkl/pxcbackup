@@ -86,7 +86,11 @@ module PXCBackup
       desync_disable
       rotate(retention)
 
-      @remote_repo.sync(@local_repo) if @remote_repo
+      if @remote_repo
+        log_action 'Syncing backups to remote repository' do
+          @remote_repo.sync(@local_repo)
+        end
+      end
     end
 
     def restore_backup(time, skip_confirmation = false)
