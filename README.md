@@ -1,5 +1,7 @@
 # PXCBackup
 
+[![Gem Version](https://badge.fury.io/rb/pxcbackup.svg)](http://badge.fury.io/rb/pxcbackup)
+
 PXCBackup is a database backup tool meant for [Percona XtraDB Cluster](http://www.percona.com/software/percona-xtradb-cluster) (PXC), although it could also be used on other related systems, like a [MariaDB](https://mariadb.org) [Galera](http://galeracluster.com/products/) cluster using [XtraBackup](http://www.percona.com/software/percona-xtrabackup), for example.
 
 The `innobackupex` script provided by Percona makes it very easy to create backups, however restoring backups can become quite complicated, since backups might need to be extracted, uncompressed, decrypted, before restoring they need to be prepared, incremental backups need to be applied on top of full backups, indexes might need to be rebuilt for compact backups, etc. Usually, backups need to be restored in stressful emergency situations, where all of these steps can slow you down quite a bit.
