@@ -15,6 +15,8 @@ module PXCBackup
       @verbose = options[:verbose] || false
       @threads = options[:threads] || 1
       @memory = options[:memory] || '100M'
+
+      @defaults_file = options[:defaults_file] || nil
       @throttle = options[:throttle] || nil
       @encrypt = options[:encrypt] || nil
       @encrypt_key = options[:encrypt_key] || nil
@@ -307,6 +309,9 @@ module PXCBackup
 
     def innobackupex(arguments, output_file = nil)
       command = @which.innobackupex.shellescape
+      # --defaults-file has to be the first option passed!
+      command << " --defaults-file=#{@defaults_file.shellescape}" if @defaults_file
+
       arguments += [
         "--ibbackup=#{@which.xtrabackup.shellescape}",
         "--parallel=#{@threads}",
