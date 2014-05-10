@@ -1,7 +1,8 @@
 require 'shellwords'
 
-require	'pxcbackup/backup'
-require	'pxcbackup/repo'
+require 'pxcbackup/backup'
+require 'pxcbackup/command'
+require 'pxcbackup/repo'
 
 module PXCBackup
   class RemoteRepo < Repo
@@ -12,7 +13,8 @@ module PXCBackup
 
     def backups
       backups = []
-      `#{@which.s3cmd.shellescape} ls #{@path.shellescape}`.lines.to_a.each do |line|
+      output = Command.run("#{@which.s3cmd.shellescape} ls #{@path.shellescape}")
+      output[:stdout].lines.to_a.each do |line|
         path = line.chomp.split[3]
         next unless Backup.regexp.match(path)
         backups << Backup.new(self, path)
@@ -23,12 +25,12 @@ module PXCBackup
     def sync(local_repo)
       source = File.join(local_repo.path, '/')
       target = File.join(path, '/')
-      system("#{@which.s3cmd.shellescape} sync --no-progress --delete-removed #{source.shellescape} #{target.shellescape} > /dev/null")
+      Command.run("#{@which.s3cmd.shellescape} sync --no-progress --delete-removed #{source.shellescape} #{target.shellescape}")
     end
 
     def delete(backup)
       verify(backup)
-      system("#{@which.s3cmd.shellescape} del #{backup.path.shellescape} > /dev/null")
+      Command.run("#{@which.s3cmd.shellescape} del #{backup.path.shellescape}")
     end
 
     def stream_command(backup)

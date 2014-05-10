@@ -1,5 +1,7 @@
 require 'shellwords'
 
+require 'pxcbackup/command'
+
 module PXCBackup
   class MySQL
     attr_reader :datadir
@@ -17,7 +19,8 @@ module PXCBackup
     end
 
     def exec(query)
-      lines = `echo #{query.shellescape} | #{@which.mysql.shellescape} #{auth} 2> /dev/null`.lines.to_a
+      output = Command.run("echo #{query.shellescape} | #{@which.mysql.shellescape} #{auth}", true)
+      lines = output[:stdout].lines.to_a
       return nil if lines.empty?
 
       keys = lines.shift.chomp.split("\t")

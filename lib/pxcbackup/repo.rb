@@ -24,7 +24,7 @@ module PXCBackup
 
     def delete(backup)
       verify(backup)
-      system("#{@which.rm.shellescape} #{backup.path.shellescape}")
+      File.delete(backup.path)
     end
 
     def stream_command(backup)

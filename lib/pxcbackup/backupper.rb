@@ -1,9 +1,9 @@
 require 'fileutils'
-require 'open3'
 require 'tmpdir'
 
 require 'pxcbackup/array'
 require 'pxcbackup/backup'
+require 'pxcbackup/command'
 require 'pxcbackup/logger'
 require 'pxcbackup/mysql'
 require 'pxcbackup/path_resolver'
@@ -205,7 +205,7 @@ module PXCBackup
         end
 
         Logger.action 'Stopping MySQL server' do
-          system("#{@which.service.shellescape} mysql stop")
+          Command.run("#{@which.service.shellescape} mysql stop")
         end
 
         stat = File.stat(mysql_datadir)
@@ -233,7 +233,7 @@ module PXCBackup
         end
 
         Logger.action 'Starting MySQL server' do
-          system("#{@which.service.shellescape} mysql start")
+          Command.run("#{@which.service.shellescape} mysql start")
         end
       end
     end
@@ -296,11 +296,8 @@ module PXCBackup
 
       command << ' ' + arguments.join(' ')
       command << " > #{output_file.shellescape}" if output_file
-      log = Open3.popen3(command) do |stdin, stdout, stderr|
-        stderr.read
-      end
-      exit_status = $?
-      raise 'something went wrong with innobackupex' unless exit_status.success? && log.lines.to_a.last.match(/: completed OK!$/)
+      result = Command.run(command)
+      raise 'unexpected output from innobackupex' unless result[:stderr].lines.to_a.last.match(/: completed OK!$/)
     end
 
     def read_backup_info(file)
@@ -341,7 +338,7 @@ module PXCBackup
             " | #{@which.tar.shellescape} -ixf - -C #{dir.shellescape}"
           end
         Logger.action action do
-          system(command)
+          Command.run(command)
         end
 
         info = read_backup_info(File.join(dir, 'xtrabackup_checkpoints'))
