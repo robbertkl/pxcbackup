@@ -4,6 +4,7 @@ require 'tmpdir'
 
 require 'pxcbackup/array'
 require 'pxcbackup/backup'
+require 'pxcbackup/logger'
 require 'pxcbackup/mysql'
 require 'pxcbackup/path_resolver'
 require 'pxcbackup/remote_repo'
@@ -12,7 +13,6 @@ require 'pxcbackup/repo'
 module PXCBackup
   class Backupper
     def initialize(options)
-      @verbose = options[:verbose] || false
       @threads = options[:threads] || 1
       @memory = options[:memory] || '100M'
 
@@ -80,7 +80,7 @@ module PXCBackup
 
       Dir.mktmpdir('pxcbackup-') do |dir|
         arguments << dir.shellescape
-        log_action "Creating backup #{filename}" do
+        Logger.action "Creating backup #{filename}" do
           innobackupex(arguments, File.join(@local_repo.path, filename))
         end
       end
@@ -89,7 +89,7 @@ module PXCBackup
       rotate(retention)
 
       if @remote_repo
-        log_action 'Syncing backups to remote repository' do
+        Logger.action 'Syncing backups to remote repository' do
           @remote_repo.sync(@local_repo)
         end
       end
@@ -107,7 +107,8 @@ module PXCBackup
 
       full_backup = incremental_backups.shift
 
-      log "[1/#{incremental_backups.size + 1}] Processing #{full_backup.type.to_s} backup from #{full_backup}"
+      Logger.info "[1/#{incremental_backups.size + 1}] Processing #{full_backup.type.to_s} backup from #{full_backup.time}"
+      Logger.increase_indentation
       with_extracted_backup(full_backup) do |full_backup_path, full_backup_info|
         raise 'unexpected backup type' unless full_backup_info[:backup_type] == full_backup.type
         raise 'unexpected start LSN' unless full_backup_info[:from_lsn] == 0
@@ -115,22 +116,23 @@ module PXCBackup
         compact = full_backup_info[:compact]
 
         if full_backup_info[:compress]
-          log_action '  Decompressing' do
+          Logger.action 'Decompressing' do
             innobackupex(['--decompress', full_backup_path.shellescape])
           end
         end
 
         if incremental_backups.any?
-          log_action "  Preparing base backup (LSN #{full_backup_info[:to_lsn]})" do
+          Logger.action "Preparing base backup (LSN #{full_backup_info[:to_lsn]})" do
             innobackupex(['--apply-log', '--redo-only', full_backup_path.shellescape])
           end
 
           current_lsn = full_backup_info[:to_lsn]
+          Logger.decrease_indentation
 
           index = 2
           incremental_backups.each do |incremental_backup|
-            log "[#{index}/#{incremental_backups.size + 1}] Processing #{incremental_backup.type.to_s} backup from #{incremental_backup}"
-            index += 1
+            Logger.info "[#{index}/#{incremental_backups.size + 1}] Processing #{incremental_backup.type.to_s} backup from #{incremental_backup.time}"
+            Logger.increase_indentation
             with_extracted_backup(incremental_backup) do |incremental_backup_path, incremental_backup_info|
               raise 'unexpected backup type' unless incremental_backup_info[:backup_type] == incremental_backup.type
               raise 'unexpected start LSN' unless incremental_backup_info[:from_lsn] == current_lsn
@@ -138,17 +140,19 @@ module PXCBackup
               compact ||= incremental_backup_info[:compact]
 
               if incremental_backup_info[:compress]
-                log_action '  Decompressing' do
+                Logger.action 'Decompressing' do
                   innobackupex(['--decompress', incremental_backup_path.shellescape])
                 end
               end
 
-              log_action "  Applying increment (LSN #{incremental_backup_info[:from_lsn]} -> #{incremental_backup_info[:to_lsn]})" do
+              Logger.action "Applying increment (LSN #{incremental_backup_info[:from_lsn]} -> #{incremental_backup_info[:to_lsn]})" do
                 innobackupex(['--apply-log', '--redo-only', full_backup_path.shellescape, "--incremental-dir=#{incremental_backup_path.shellescape}"])
               end
 
               current_lsn = incremental_backup_info[:to_lsn]
+              Logger.decrease_indentation
             end
+            index += 1
           end
         end
 
@@ -162,12 +166,12 @@ module PXCBackup
           arguments << '--rebuild-indexes'
         end
 
-        log_action "#{action}" do
+        Logger.action "#{action}" do
           arguments << full_backup_path.shellescape
           innobackupex(arguments)
         end
 
-        log_action 'Attempting to restore Galera info' do
+        Logger.action 'Attempting to restore Galera info' do
           restore_galera_info(full_backup_path)
         end
 
@@ -200,7 +204,7 @@ module PXCBackup
           raise 'did not confirm restore' unless confirmation == 'yes'
         end
 
-        log_action 'Stopping MySQL server' do
+        Logger.action 'Stopping MySQL server' do
           system("#{@which.service.shellescape} mysql stop")
         end
 
@@ -209,39 +213,33 @@ module PXCBackup
         gid = stat.gid
 
         mysql_datadir_old = mysql_datadir + '_' + Time.now.strftime('%Y%m%d%H%M%S')
-        log_action "Moving current datadir to #{mysql_datadir_old}" do
+        Logger.action "Moving current datadir to #{mysql_datadir_old}" do
           File.rename(mysql_datadir, mysql_datadir_old)
         end
 
-        log_action "Restoring backup to #{mysql_datadir}" do
+        Logger.action "Restoring backup to #{mysql_datadir}" do
           Dir.mkdir(mysql_datadir)
           innobackupex(['--move-back', full_backup_path.shellescape])
         end
 
-        log_action "Chowning #{mysql_datadir}" do
+        Logger.action "Chowning #{mysql_datadir}" do
           FileUtils.chown_R(uid, gid, mysql_datadir)
         end
 
         if @local_repo
-          log_action "Removing last backup info" do
+          Logger.action "Removing last backup info" do
             File.delete(File.join(@local_repo.path, 'xtrabackup_checkpoints'))
           end
         end
 
-        log_action 'Starting MySQL server' do
+        Logger.action 'Starting MySQL server' do
           system("#{@which.service.shellescape} mysql start")
         end
       end
     end
 
     def list_backups
-      all_backups.each do |backup|
-        if @verbose
-          puts "#{backup} - #{backup.type.to_s[0..3]} (#{backup.remote? ? 'remote' : 'local'})"
-        else
-          puts backup
-        end
-      end
+      all_backups.each { |backup| puts backup }
     end
 
     private
@@ -254,56 +252,30 @@ module PXCBackup
       backups.sort
     end
 
-    def log(text)
-      return unless @verbose
-      previous_stdout = $stdout
-      $stdout = STDOUT
-      puts text if @verbose
-      $stdout = previous_stdout
-    end
-
-    def log_action(text)
-      return yield unless @verbose
-
-      begin
-        print "#{text}... "
-        previous_stdout, previous_stderr = $stdout, $stderr
-        begin
-          $stdout = $stderr = File.new('/dev/null', 'w')
-          t1 = Time.now
-          yield
-          t2 = Time.now
-        ensure
-          $stdout, $stderr = previous_stdout, previous_stderr
-        end
-      rescue => e
-        puts "fail"
-        raise e
-      else
-        puts "done (%.1fs)" % (t2 - t1)
+    def desync_enable(wait = 60)
+      Logger.info 'Setting wsrep_desync=ON'
+      @mysql.set_variable('wsrep_desync', 'ON')
+      Logger.action "Waiting for #{wait} seconds" do
+        sleep(wait)
       end
     end
 
-    def desync_enable(wait = 60)
-      log "Setting wsrep_desync=ON and waiting for #{wait} seconds"
-      @mysql.set_variable('wsrep_desync', 'ON')
-      sleep(wait)
-    end
-
     def desync_disable
-      log 'Waiting until wsrep_local_recv_queue is empty'
-      sleep(2) until @mysql.get_status('wsrep_local_recv_queue') == '0'
-      log 'Setting wsrep_desync=OFF'
+      Logger.action 'Waiting until wsrep_local_recv_queue is empty' do
+        sleep(2) until @mysql.get_status('wsrep_local_recv_queue') == '0'
+      end
+      Logger.info 'Setting wsrep_desync=OFF'
       @mysql.set_variable('wsrep_desync', 'OFF')
     end
 
     def rotate(retention)
-      log 'Checking if we have old backups to remove'
-      @local_repo.backups.each do |backup|
-        days = (Time.now - backup.time) / 86400
-        break if days < retention && backup.full?
-        log "Deleting backup #{backup}"
-        backup.delete
+      Logger.action 'Checking if we have old backups to remove' do
+        @local_repo.backups.each do |backup|
+          days = (Time.now - backup.time) / 86400
+          break if days < retention && backup.full?
+          Logger.info "Deleting backup from #{backup.time}"
+          backup.delete
+        end
       end
     end
 
@@ -368,7 +340,7 @@ module PXCBackup
           when :tar
             " | #{@which.tar.shellescape} -ixf - -C #{dir.shellescape}"
           end
-        log_action "  #{action}" do
+        Logger.action action do
           system(command)
         end
 

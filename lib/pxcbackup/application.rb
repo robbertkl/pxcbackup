@@ -3,6 +3,7 @@ require 'time'
 require 'yaml'
 
 require 'pxcbackup/backupper'
+require 'pxcbackup/logger'
 require 'pxcbackup/version'
 
 module PXCBackup
@@ -23,6 +24,7 @@ module PXCBackup
     end
 
     def run
+      Logger.color_output = ENV['TERM'] && !@options[:no_color]
       backupper = Backupper.new(@options)
 
       case @command
@@ -49,6 +51,10 @@ module PXCBackup
         opt.separator ''
         opt.separator 'Options'
 
+        opt.on('--no-color', 'disable color output') do |color_output|
+          @options[:no_color] = true
+        end
+
         opt.on('-c', '--config', '=CONFIG_FILE', 'config file to use instead of ~/.pxcbackup') do |config_file|
           @options[:config] = config_file
         end
@@ -74,7 +80,7 @@ module PXCBackup
         end
 
         opt.on('-v', '--verbose', 'verbose output') do
-          @options[:verbose] = true
+          Logger.raise_verbosity
         end
 
         opt.on('--version', 'print version and exit') do

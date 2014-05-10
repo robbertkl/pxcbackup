@@ -23,7 +23,7 @@ module PXCBackup
     end
 
     def to_s
-      time.to_s
+      "#{time} - #{type.to_s[0..3]} (#{remote? ? 'remote' : 'local'})"
     end
 
     def time
