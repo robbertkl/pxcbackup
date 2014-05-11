@@ -127,10 +127,10 @@ module PXCBackup
           end
 
           current_lsn = full_backup_info[:to_lsn]
-          Logger.decrease_indentation
 
           index = 2
           incremental_backups.each do |incremental_backup|
+            Logger.decrease_indentation
             Logger.info "[#{index}/#{incremental_backups.size + 1}] Processing #{incremental_backup.type.to_s} backup from #{incremental_backup.time}"
             Logger.increase_indentation
             with_extracted_backup(incremental_backup) do |incremental_backup_path, incremental_backup_info|
@@ -150,11 +150,12 @@ module PXCBackup
               end
 
               current_lsn = incremental_backup_info[:to_lsn]
-              Logger.decrease_indentation
             end
             index += 1
           end
         end
+
+        Logger.decrease_indentation
 
         action = 'Final prepare'
         arguments = [
