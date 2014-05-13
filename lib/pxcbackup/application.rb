@@ -51,10 +51,6 @@ module PXCBackup
         opt.separator ''
         opt.separator 'Options'
 
-        opt.on('--no-color', 'disable color output') do |color_output|
-          @options[:no_color] = true
-        end
-
         opt.on('-c', '--config', '=CONFIG_FILE', 'config file to use instead of ~/.pxcbackup') do |config_file|
           @options[:config] = config_file
         end
@@ -73,6 +69,10 @@ module PXCBackup
 
         opt.on('-l', '--local', 'stay local, i.e. do not communicate with S3') do
           @options[:local] = true
+        end
+
+        opt.on('--no-color', 'disable color output') do
+          @options[:no_color] = true
         end
 
         opt.on('-r', '--remote', '=REMOTE_URI', 'remote URI to sync backups to, e.g. s3://my-aws-bucket/') do |remote|
