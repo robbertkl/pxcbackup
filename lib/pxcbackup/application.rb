@@ -44,10 +44,10 @@ module PXCBackup
         opt.banner = "Usage: #{$0} COMMAND [OPTIONS]"
         opt.separator ''
         opt.separator 'Commands'
-        opt.separator '     create             create a new backup'
-        opt.separator '     help               show this help'
-        opt.separator '     list               list available backups'
-        opt.separator '     restore [time]     restore to a point in time'
+        opt.separator '    create             create a new backup'
+        opt.separator '    help               show this help'
+        opt.separator '    list               list available backups'
+        opt.separator '    restore [time]     restore to a point in time'
         opt.separator ''
         opt.separator 'Options'
 
