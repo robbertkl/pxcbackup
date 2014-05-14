@@ -97,6 +97,8 @@ module PXCBackup
 
     def restore_backup(time, options = {})
       skip_confirmation = options[:skip_confirmation] || false
+      mysql_start_command = options[:mysql_start_command] || "#{@which.service.shellescape} mysql start"
+      mysql_stop_command = options[:mysql_stop_command] || "#{@which.service.shellescape} mysql stop"
 
       incremental_backups = []
       all_backups.reverse_each do |backup|
@@ -208,7 +210,7 @@ module PXCBackup
         end
 
         Logger.action 'Stopping MySQL server' do
-          Command.run("#{@which.service.shellescape} mysql stop")
+          Command.run(mysql_stop_command)
         end
 
         stat = File.stat(mysql_datadir)
@@ -236,7 +238,7 @@ module PXCBackup
         end
 
         Logger.action 'Starting MySQL server' do
-          Command.run("#{@which.service.shellescape} mysql start")
+          Command.run(mysql_start_command)
         end
       end
     end
