@@ -95,7 +95,9 @@ module PXCBackup
       end
     end
 
-    def restore_backup(time, skip_confirmation = false)
+    def restore_backup(time, options = {})
+      skip_confirmation = options[:skip_confirmation] || false
+
       incremental_backups = []
       all_backups.reverse_each do |backup|
         incremental_backups.unshift(backup) if backup.time <= time

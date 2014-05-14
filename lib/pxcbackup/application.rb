@@ -34,7 +34,7 @@ module PXCBackup
         backupper.list_backups
       when 'restore'
         time = @arguments.any? ? Time.parse(@arguments.first) : Time.now
-        backupper.restore_backup(time, !!@options[:skip_confirmation])
+        backupper.restore_backup(time, @options)
       end
     end
 
