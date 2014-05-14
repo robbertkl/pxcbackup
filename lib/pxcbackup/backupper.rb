@@ -232,8 +232,11 @@ module PXCBackup
         end
 
         if @local_repo
-          Logger.action "Removing last backup info" do
-            File.delete(File.join(@local_repo.path, 'xtrabackup_checkpoints'))
+          xtrabackup_checkpoints_file = File.join(@local_repo.path, 'xtrabackup_checkpoints')
+          if File.file?(xtrabackup_checkpoints_file)
+            Logger.action "Removing last backup info" do
+              File.delete(xtrabackup_checkpoints_file)
+            end
           end
         end
 
