@@ -349,6 +349,9 @@ module PXCBackup
           Command.run(command)
         end
 
+        xtrabackup_binary_file = File.join(dir, 'xtrabackup_binary')
+        File.delete(xtrabackup_binary_file) if File.file?(xtrabackup_binary_file)
+
         info = read_backup_info(File.join(dir, 'xtrabackup_checkpoints'))
         info[:compress] = Dir.glob(File.join(dir, '**', '*.qp')).any?
 
