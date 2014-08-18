@@ -53,6 +53,10 @@ module PXCBackup
       output message if @verbosity_level >= 1
     end
 
+    def self.warning(message)
+      output yellow(message) if @verbosity_level >= 1
+    end
+
     def self.debug(message)
       output blue(message) if @verbosity_level >= 2
     end

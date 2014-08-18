@@ -349,10 +349,16 @@ module PXCBackup
           Command.run(command)
         end
 
+        checkpoints_file = File.join(dir, 'xtrabackup_checkpoints')
+        unless File.file?(checkpoints_file)
+          Logger.warning 'Could not find xtrabackup_checkpoints: trying to skip faulty backup'
+          return
+        end
+
         xtrabackup_binary_file = File.join(dir, 'xtrabackup_binary')
         File.delete(xtrabackup_binary_file) if File.file?(xtrabackup_binary_file)
 
-        info = read_backup_info(File.join(dir, 'xtrabackup_checkpoints'))
+        info = read_backup_info(checkpoints_file)
         info[:compress] = Dir.glob(File.join(dir, '**', '*.qp')).any?
 
         yield(dir, info)
