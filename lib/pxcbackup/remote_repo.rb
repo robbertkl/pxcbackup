@@ -35,7 +35,7 @@ module PXCBackup
 
     def stream_command(backup)
       verify(backup)
-      "#{@which.s3cmd.shellescape} get #{backup.path.shellescape} -"
+      "#{@which.s3cmd.shellescape} get --no-progress #{backup.path.shellescape} -"
     end
   end
 end
