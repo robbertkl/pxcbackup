@@ -292,14 +292,14 @@ module PXCBackup
       # --defaults-file has to be the first option passed!
       command << " --defaults-file=#{@defaults_file.shellescape}" if @defaults_file
 
-      arguments += [
+      arguments.unshift(
         "--ibbackup=#{@which.xtrabackup.shellescape}",
         "--parallel=#{@threads}",
         "--compress-threads=#{@threads}",
         "--rebuild-threads #{@threads}",
         "--use-memory=#{@memory}",
         "--tmpdir=#{Dir.tmpdir.shellescape}",
-      ]
+      )
       arguments << "--throttle=#{@throttle.shellescape}" if @throttle
 
       command << ' ' + arguments.join(' ')
