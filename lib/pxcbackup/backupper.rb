@@ -305,7 +305,12 @@ module PXCBackup
       command << ' ' + arguments.join(' ')
       command << " > #{output_file.shellescape}" if output_file
       result = Command.run(command)
-      raise 'unexpected output from innobackupex' unless result[:stderr].lines.to_a.last.match(/ completed OK!$/)
+
+      unless result[:stderr].lines.to_a.last.match(/ completed OK!$/)
+        # Uncomment next line to see what's going on
+        #puts result
+        raise 'unexpected output from innobackupex'
+      end
     end
 
     def read_backup_info(file)
